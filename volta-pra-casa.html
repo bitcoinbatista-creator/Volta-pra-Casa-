@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Volta pra Casa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0f0e;
+    --surface: #151918;
+    --surface2: #1c2220;
+    --border: #2a3330;
+    --text: #e8ede9;
+    --muted: #7a9088;
+    --accent: #4dff91;
+    --accent-dim: #1a4d33;
+    --warn: #ffb347;
+    --warn-dim: #3d2a0d;
+    --danger: #ff5555;
+    --danger-dim: #3d0d0d;
+    --blue: #6eb5ff;
+  }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 100;
+    opacity: 0.6;
+  }
+
+  header {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .logo-area h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 26px;
+    font-weight: 300;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .logo-area h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .logo-area p {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 4px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  .clock-area {
+    text-align: right;
+  }
+
+  #clock {
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+
+  #date-label {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+    letter-spacing: 0.5px;
+  }
+
+  /* Alert Banner */
+  #alert-banner {
+    display: none;
+    margin: 16px;
+    padding: 14px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--warn);
+    background: var(--warn-dim);
+    font-size: 12px;
+    line-height: 1.5;
+    animation: pulse-border 2s ease-in-out infinite;
+  }
+
+  #alert-banner.danger {
+    border-color: var(--danger);
+    background: var(--danger-dim);
+  }
+
+  @keyframes pulse-border {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  #alert-banner .alert-icon {
+    font-size: 16px;
+    margin-right: 6px;
+  }
+
+  #alert-banner strong {
+    color: var(--warn);
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  #alert-banner.danger strong {
+    color: var(--danger);
+  }
+
+  /* Departure Advisor */
+  .section {
+    margin: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .section-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-header span.dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: inline-block;
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  /* Best Time Slots */
+  .time-slots {
+    padding: 16px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .slot {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: default;
+    transition: border-color 0.2s;
+  }
+
+  .slot.best {
+    border-color: var(--accent);
+    background: rgba(77,255,145,0.05);
+  }
+
+  .slot.ok {
+    border-color: var(--warn);
+    background: rgba(255,179,71,0.04);
+  }
+
+  .slot.bad {
+    border-color: var(--danger);
+    background: rgba(255,85,85,0.04);
+  }
+
+  .slot-time {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text);
+    min-width: 60px;
+    letter-spacing: -0.5px;
+  }
+
+  .slot-info {
+    flex: 1;
+  }
+
+  .slot-label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 2px;
+    letter-spacing: 0.5px;
+  }
+
+  .slot-duration {
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .slot-badge {
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-weight: 500;
+  }
+
+  .slot.best .slot-badge { background: var(--accent-dim); color: var(--accent); }
+  .slot.ok .slot-badge { background: var(--warn-dim); color: var(--warn); }
+  .slot.bad .slot-badge { background: var(--danger-dim); color: var(--danger); }
+
+  /* Routes */
+  .routes {
+    padding: 16px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .route-card {
+    padding: 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+
+  .route-card.recommended {
+    border-color: var(--accent);
+  }
+
+  .route-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+
+  .route-name {
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .route-rec {
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-dim);
+    padding: 2px 7px;
+    border-radius: 3px;
+  }
+
+  .route-via {
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .route-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .route-stat {
+    text-align: center;
+  }
+
+  .route-stat-val {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .route-stat-label {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .route-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 12px;
+    border-radius: 5px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    transition: opacity 0.15s;
+  }
+
+  .btn:hover { opacity: 0.85; }
+
+  .btn-gmaps {
+    background: #1a73e8;
+    color: white;
+  }
+
+  .btn-waze {
+    background: #33ccff;
+    color: #0d0f0e;
+    font-weight: 500;
+  }
+
+  /* Traffic bar */
+  .traffic-bar-wrap {
+    margin-top: 4px;
+    margin-bottom: 12px;
+  }
+
+  .traffic-bar-label {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+
+  .traffic-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .traffic-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1s ease;
+  }
+
+  .fill-green { background: var(--accent); }
+  .fill-yellow { background: var(--warn); }
+  .fill-red { background: var(--danger); }
+
+  /* Weather strip */
+  #weather-strip {
+    margin: 0 16px 16px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  #weather-strip .wx-icon { font-size: 20px; }
+  #weather-strip .wx-info { flex: 1; }
+  #weather-strip .wx-main { color: var(--text); font-size: 13px; }
+  #weather-strip .wx-note { font-size: 10px; margin-top: 2px; }
+
+  /* Holiday list */
+  .holidays {
+    padding: 16px;
+    display: grid;
+    gap: 8px;
+  }
+
+  .holiday-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 11px;
+  }
+
+  .holiday-date {
+    min-width: 44px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .holiday-name {
+    color: var(--text);
+    flex: 1;
+  }
+
+  .holiday-alert {
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--warn);
+    background: var(--warn-dim);
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0 16px;
+  }
+
+  /* Footer */
+  footer {
+    margin: 24px 16px 16px;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-align: center;
+    opacity: 0.5;
+  }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section, #alert-banner, #weather-strip {
+    animation: fadeUp 0.4s ease forwards;
+  }
+
+  .section:nth-child(2) { animation-delay: 0.05s; }
+  .section:nth-child(3) { animation-delay: 0.1s; }
+  .section:nth-child(4) { animation-delay: 0.15s; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-area">
+    <h1>Volta pra <em>Casa</em></h1>
+    <p>SP Paulista → Atibaia</p>
+  </div>
+  <div class="clock-area">
+    <div id="clock">--:--</div>
+    <div id="date-label">carregando...</div>
+  </div>
+</header>
+
+<div id="alert-banner">
+  <strong><span class="alert-icon">⚠</span> <span id="alert-title"></span></strong>
+  <span id="alert-msg"></span>
+</div>
+
+<div class="section">
+  <div class="section-header"><span class="dot"></span> Melhores horários hoje</div>
+  <div class="time-slots" id="time-slots"></div>
+</div>
+
+<div id="weather-strip">
+  <div class="wx-icon" id="wx-icon">🌤</div>
+  <div class="wx-info">
+    <div class="wx-main" id="wx-main">Verificando condições...</div>
+    <div class="wx-note" id="wx-note">Previsão para Atibaia</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header"><span class="dot"></span> Rotas SP → Atibaia</div>
+  <div class="routes" id="routes"></div>
+</div>
+
+<div class="section">
+  <div class="section-header"><span class="dot"></span> Feriados e vésperas</div>
+  <div class="holidays" id="holidays"></div>
+</div>
+
+<footer>Abre links no Maps/Waze. Dados de tráfego em tempo real via Google Maps.</footer>
+
+<script>
+// ─── DATAS E FERIADOS ───────────────────────────────────────────────
+const FERIADOS_2025_2026 = [
+  { date: '2025-06-19', name: 'Corpus Christi' },
+  { date: '2025-07-09', name: 'Revolução Constitucionalista (SP)' },
+  { date: '2025-09-07', name: 'Independência do Brasil' },
+  { date: '2025-10-12', name: 'Nossa Sra. Aparecida' },
+  { date: '2025-11-02', name: 'Finados' },
+  { date: '2025-11-15', name: 'Proclamação da República' },
+  { date: '2025-11-20', name: 'Consciência Negra' },
+  { date: '2025-12-24', name: 'Véspera de Natal' },
+  { date: '2025-12-25', name: 'Natal' },
+  { date: '2025-12-31', name: 'Véspera de Ano Novo' },
+  { date: '2026-01-01', name: 'Ano Novo' },
+  { date: '2026-01-25', name: 'Aniversário de São Paulo' },
+  { date: '2026-02-16', name: 'Carnaval (segunda)' },
+  { date: '2026-02-17', name: 'Carnaval (terça)' },
+  { date: '2026-04-03', name: 'Sexta-Feira Santa' },
+  { date: '2026-04-21', name: 'Tiradentes' },
+  { date: '2026-05-01', name: 'Dia do Trabalho' },
+  { date: '2026-06-04', name: 'Corpus Christi' },
+  { date: '2026-07-09', name: 'Revolução Constitucionalista (SP)' },
+  { date: '2026-09-07', name: 'Independência do Brasil' },
+];
+
+const MONTHS_PT = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const DAYS_PT = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+
+function today() {
+  return new Date();
+}
+
+function toISO(d) {
+  return d.toISOString().slice(0,10);
+}
+
+function isFeriado(dateStr) {
+  return FERIADOS_2025_2026.some(f => f.date === dateStr);
+}
+
+function getFeriadoName(dateStr) {
+  const f = FERIADOS_2025_2026.find(f => f.date === dateStr);
+  return f ? f.name : null;
+}
+
+function isVespera(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const nextDay = new Date(d);
+  nextDay.setDate(d.getDate() + 1);
+  return isFeriado(toISO(nextDay));
+}
+
+function isFriday(d) {
+  return d.getDay() === 5;
+}
+
+// ─── RELÓGIO ─────────────────────────────────────────────────────────
+function updateClock() {
+  const now = today();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('clock').textContent = `${h}:${m}`;
+
+  const day = DAYS_PT[now.getDay()];
+  const dt = now.getDate();
+  const mo = MONTHS_PT[now.getMonth()];
+  document.getElementById('date-label').textContent = `${day}, ${dt} de ${mo}`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ─── ALERT BANNER ────────────────────────────────────────────────────
+function setupAlert() {
+  const now = today();
+  const dateStr = toISO(now);
+  const banner = document.getElementById('alert-banner');
+  const title = document.getElementById('alert-title');
+  const msg = document.getElementById('alert-msg');
+
+  const feriadoAmanha = isVespera(dateStr);
+  const feriadoHoje = isFeriado(dateStr);
+  const sexta = isFriday(now);
+  const hora = now.getHours();
+
+  if (feriadoHoje) {
+    banner.style.display = 'block';
+    banner.classList.add('danger');
+    title.textContent = `Hoje: ${getFeriadoName(dateStr)}`;
+    msg.textContent = 'Trânsito imprevisível o dia todo. Se puder sair muito cedo (antes das 10h) ou esperar até depois das 21h, melhor.';
+  } else if (feriadoAmanha) {
+    banner.style.display = 'block';
+    title.textContent = 'Véspera de feriado';
+    msg.textContent = 'Saídas entre 15h e 21h tendem a ser críticas. Priorize sair antes das 14h30 ou depois das 21h30.';
+  } else if (sexta) {
+    banner.style.display = 'block';
+    title.textContent = 'Sexta-feira — atenção redobrada';
+    msg.textContent = 'Trânsito pesado a partir das 15h. Janela ideal: antes das 14h30 ou depois das 20h30.';
+  }
+}
+setupAlert();
+
+// ─── HORÁRIOS RECOMENDADOS ───────────────────────────────────────────
+function buildSlots() {
+  const now = today();
+  const sexta = isFriday(now);
+  const dateStr = toISO(now);
+  const feriadoAmanha = isVespera(dateStr);
+  const isHeavy = sexta || feriadoAmanha;
+
+  let slots;
+  if (isHeavy) {
+    slots = [
+      { time: '13:30', label: 'Antes do pico', duration: '~1h15', quality: 'best', badge: 'Recomendado' },
+      { time: '16:00', label: 'Pico — evite', duration: '~2h30+', quality: 'bad', badge: 'Crítico' },
+      { time: '19:00', label: 'Pico ainda alto', duration: '~2h00', quality: 'bad', badge: 'Ruim' },
+      { time: '21:30', label: 'Saída noturna', duration: '~1h00', quality: 'ok', badge: 'Aceitável' },
+    ];
+  } else {
+    slots = [
+      { time: '07:30', label: 'Manhã cedo', duration: '~1h10', quality: 'best', badge: 'Recomendado' },
+      { time: '17:00', label: 'Pico da tarde', duration: '~1h50', quality: 'bad', badge: 'Ruim' },
+      { time: '19:30', label: 'Depois do pico', duration: '~1h20', quality: 'ok', badge: 'Aceitável' },
+      { time: '21:00', label: 'Noturno', duration: '~55min', quality: 'best', badge: 'Ótimo' },
+    ];
+  }
+
+  const container = document.getElementById('time-slots');
+  container.innerHTML = slots.map(s => `
+    <div class="slot ${s.quality}">
+      <div class="slot-time">${s.time}</div>
+      <div class="slot-info">
+        <div class="slot-label">${s.label}</div>
+        <div class="slot-duration">${s.duration} até Atibaia</div>
+      </div>
+      <div class="slot-badge">${s.badge}</div>
+    </div>
+  `).join('');
+}
+buildSlots();
+
+// ─── ROTAS ───────────────────────────────────────────────────────────
+const ORIGIN = encodeURIComponent('Av. Paulista, São Paulo');
+const DEST = encodeURIComponent('Atibaia, SP');
+
+const ROUTES = [
+  {
+    name: 'Fernão Dias',
+    via: 'Paulista → Marginal Tietê → BR-381 → Atibaia',
+    km: '72km',
+    pedagios: 'Sem pedágio',
+    normal: '~1h00',
+    recommended: true,
+    note: 'A rota mais direta do centro. Sem pedágio e menor distância. Fica pesada nos picos de sexta — nesse caso saia antes das 14h30 ou depois das 21h.',
+    trafficLevel: 0.40,
+    trafficColor: 'fill-green',
+    gmaps: `https://www.google.com/maps/dir/Av.+Paulista,+São+Paulo/Atibaia,+SP/@-23.05,-46.5,10z/am=t/`,
+    waze: `https://waze.com/ul?ll=-23.1168,-46.5506&navigate=yes&q=Atibaia+SP`,
+  },
+  {
+    name: 'Bandeirantes + Alça SP-083',
+    via: 'Paulista → Pinheiros → Bandeirantes → SP-083 → Atibaia',
+    km: '95km',
+    pedagios: '~R$ 9,00',
+    normal: '~1h20',
+    recommended: false,
+    note: 'Vale só quando a Fernão Dias está travada (acidente ou feriado prolongado). Trajeto mais longo e com pedágio, mas tende a fluir melhor nesses casos específicos.',
+    trafficLevel: 0.30,
+    trafficColor: 'fill-green',
+    gmaps: `https://www.google.com/maps/dir/Av.+Paulista,+São+Paulo/Atibaia,+SP/@-23.05,-46.8,10z/am=t/`,
+    waze: `https://waze.com/ul?ll=-23.1168,-46.5506&navigate=yes&q=Atibaia+SP`,
+  },
+];
+
+function buildRoutes() {
+  const container = document.getElementById('routes');
+  container.innerHTML = ROUTES.map(r => `
+    <div class="route-card ${r.recommended ? 'recommended' : ''}">
+      <div class="route-top">
+        <div class="route-name">${r.name}</div>
+        ${r.recommended ? '<div class="route-rec">★ Principal</div>' : ''}
+      </div>
+      <div class="route-via">${r.via}</div>
+      <div class="route-stats">
+        <div class="route-stat">
+          <div class="route-stat-val">${r.km}</div>
+          <div class="route-stat-label">Distância</div>
+        </div>
+        <div class="route-stat">
+          <div class="route-stat-val">${r.normal}</div>
+          <div class="route-stat-label">Tempo normal</div>
+        </div>
+        <div class="route-stat">
+          <div class="route-stat-val">${r.pedagios}</div>
+          <div class="route-stat-label">Pedágio</div>
+        </div>
+      </div>
+      <div class="traffic-bar-wrap">
+        <div class="traffic-bar-label">Tráfego estimado agora</div>
+        <div class="traffic-bar">
+          <div class="traffic-fill ${r.trafficColor}" style="width:${r.trafficLevel * 100}%"></div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:12px;">${r.note}</div>
+      <div class="route-actions">
+        <a class="btn btn-gmaps" href="${r.gmaps}" target="_blank">📍 Google Maps</a>
+        <a class="btn btn-waze" href="${r.waze}" target="_blank">🚗 Waze</a>
+      </div>
+    </div>
+  `).join('');
+}
+buildRoutes();
+
+// ─── PREVISÃO DO TEMPO (OpenMeteo — gratuito, sem API key) ────────────
+async function fetchWeather() {
+  try {
+    // Coordenadas de Atibaia
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=-23.1168&longitude=-46.5506&current=temperature_2m,weathercode,precipitation&timezone=America%2FSao_Paulo';
+    const res = await fetch(url);
+    const data = await res.json();
+    const { temperature_2m, weathercode, precipitation } = data.current;
+
+    const icons = {
+      0: '☀️', 1: '🌤', 2: '⛅', 3: '☁️',
+      45: '🌫', 48: '🌫', 51: '🌦', 53: '🌧', 55: '🌧',
+      61: '🌧', 63: '🌧', 65: '⛈', 80: '🌦', 81: '🌧', 82: '⛈',
+      95: '⛈', 96: '⛈', 99: '⛈',
+    };
+
+    const labels = {
+      0: 'Céu limpo', 1: 'Poucas nuvens', 2: 'Parcialmente nublado', 3: 'Nublado',
+      45: 'Nevoeiro', 48: 'Nevoeiro com geada', 51: 'Garoa leve', 53: 'Garoa moderada', 55: 'Garoa forte',
+      61: 'Chuva fraca', 63: 'Chuva moderada', 65: 'Chuva forte',
+      80: 'Pancadas de chuva', 81: 'Pancadas fortes', 82: 'Pancadas muito fortes',
+      95: 'Tempestade', 96: 'Tempestade com granizo', 99: 'Tempestade severa',
+    };
+
+    const icon = icons[weathercode] || '🌡';
+    const label = labels[weathercode] || 'Condição desconhecida';
+    const chuva = precipitation > 0;
+
+    document.getElementById('wx-icon').textContent = icon;
+    document.getElementById('wx-main').textContent = `${label} · ${Math.round(temperature_2m)}°C`;
+    document.getElementById('wx-note').textContent = chuva
+      ? `⚠ Precipitação: ${precipitation}mm — trânsito tende a piorar com chuva`
+      : 'Sem precipitação prevista no momento · Atibaia';
+  } catch(e) {
+    document.getElementById('wx-main').textContent = 'Previsão indisponível';
+    document.getElementById('wx-note').textContent = 'Verifique sua conexão';
+  }
+}
+fetchWeather();
+
+// ─── FERIADOS PRÓXIMOS ───────────────────────────────────────────────
+function buildHolidays() {
+  const now = today();
+  const upcoming = FERIADOS_2025_2026
+    .filter(f => {
+      const d = new Date(f.date + 'T12:00:00');
+      const diff = (d - now) / (1000*60*60*24);
+      return diff >= -1 && diff <= 60;
+    })
+    .slice(0, 6);
+
+  const container = document.getElementById('holidays');
+  if (upcoming.length === 0) {
+    container.innerHTML = '<div style="padding:8px;font-size:11px;color:var(--muted);">Sem feriados nos próximos 60 dias.</div>';
+    return;
+  }
+
+  container.innerHTML = upcoming.map(f => {
+    const d = new Date(f.date + 'T12:00:00');
+    const dayName = DAYS_PT[d.getDay()];
+    const dt = d.getDate();
+    const mo = MONTHS_PT[d.getMonth()];
+    const isSexta = d.getDay() === 5;
+    const isQuinta = d.getDay() === 4;
+
+    let alertTag = '';
+    if (isSexta) alertTag = '<span class="holiday-alert">+ caos</span>';
+    else if (isQuinta) alertTag = '<span class="holiday-alert">Véspera</span>';
+
+    // Véspera no dia anterior
+    const prev = new Date(d);
+    prev.setDate(d.getDate()-1);
+    const prevSexta = prev.getDay() === 5;
+
+    return `
+      <div class="holiday-item">
+        <div class="holiday-date">${dt} ${mo}</div>
+        <div class="holiday-name">${f.name} <span style="color:var(--muted);font-size:10px;">(${dayName})</span></div>
+        ${alertTag}
+      </div>
+    `;
+  }).join('');
+}
+buildHolidays();
+</script>
+</body>
+</html>
