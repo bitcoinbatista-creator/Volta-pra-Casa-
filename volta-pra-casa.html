@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Volta pra Casa">
+<meta name="theme-color" content="#0d0f0e">
+<title>Volta pra Casa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f0e;--surface:#151918;--surface2:#1c2220;
+  --border:#2a3330;--text:#e8ede9;--muted:#7a9088;
+  --accent:#4dff91;--accent-dim:#1a4d33;
+  --warn:#ffb347;--warn-dim:#3d2a0d;
+  --danger:#ff5555;--danger-dim:#3d0d0d;
+  --blue:#6eb5ff;--blue-dim:#0d2240;
+  --purple:#c084fc;--purple-dim:#2d1a4d;
+  --teal:#2dd4bf;--teal-dim:#0d3330;
+  --orange:#fb923c;--orange-dim:#3d1a05;
+}
+body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;padding-bottom:40px}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:999;opacity:0.6}
+
+/* HEADER */
+header{padding:16px 16px 12px;border-bottom:1px solid var(--border);display:flex;align-items:flex-end;justify-content:space-between}
+.logo h1{font-family:'Fraunces',serif;font-size:21px;font-weight:300;letter-spacing:-0.5px;line-height:1}
+.logo h1 em{font-style:italic;color:var(--accent)}
+.logo p{font-size:9px;color:var(--muted);margin-top:3px;letter-spacing:1px;text-transform:uppercase}
+.clock{text-align:right}
+#clock{font-size:22px;font-weight:500;letter-spacing:-0.5px}
+#date-label{font-size:9px;color:var(--muted);margin-top:2px}
+
+/* TOGGLE MODO */
+.modo-toggle{margin:12px;display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:4px}
+.modo-btn{padding:10px;border-radius:5px;border:none;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all .2s;background:transparent;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:6px}
+.modo-btn.ativo{font-weight:500}
+.modo-btn.ativo.casa{background:var(--accent-dim);color:var(--accent)}
+.modo-btn.ativo.trabalho{background:var(--orange-dim);color:var(--orange)}
+
+/* SEMÁFORO */
+#semaforo{margin:0 12px 12px;padding:16px;border-radius:10px;border:2px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:14px;transition:all .4s}
+#semaforo.verde{border-color:var(--accent);background:rgba(77,255,145,0.05)}
+#semaforo.amarelo{border-color:var(--warn);background:rgba(255,179,71,0.05)}
+#semaforo.vermelho{border-color:var(--danger);background:rgba(255,85,85,0.05)}
+#semaforo.bloqueado{border-color:var(--purple);background:rgba(192,132,252,0.05)}
+.sema-icon{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.verde .sema-icon{background:rgba(77,255,145,0.15);box-shadow:0 0 16px rgba(77,255,145,0.35)}
+.amarelo .sema-icon{background:rgba(255,179,71,0.15);box-shadow:0 0 16px rgba(255,179,71,0.35)}
+.vermelho .sema-icon{background:rgba(255,85,85,0.15);box-shadow:0 0 16px rgba(255,85,85,0.35)}
+.bloqueado .sema-icon{background:rgba(192,132,252,0.15);box-shadow:0 0 16px rgba(192,132,252,0.35)}
+.sema-body{flex:1}
+.sema-status{font-family:'Fraunces',serif;font-size:17px;font-weight:300;line-height:1.2}
+.verde .sema-status{color:var(--accent)}
+.amarelo .sema-status{color:var(--warn)}
+.vermelho .sema-status{color:var(--danger)}
+.bloqueado .sema-status{color:var(--purple)}
+.sema-detail{font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5}
+.sema-eta{text-align:right;flex-shrink:0}
+.sema-eta-val{font-size:19px;font-weight:500}
+.verde .sema-eta-val{color:var(--accent)}
+.amarelo .sema-eta-val{color:var(--warn)}
+.vermelho .sema-eta-val{color:var(--danger)}
+.bloqueado .sema-eta-val{color:var(--purple)}
+.sema-eta-label{font-size:8px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+
+/* ROTA INFO */
+#rota-info{margin:0 12px 12px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:6px;font-size:10px;color:var(--muted);line-height:1.6}
+#rota-info strong{color:var(--text);display:block;margin-bottom:2px;font-size:11px}
+
+/* PRÓXIMA JANELA */
+#prox-janela{margin:0 12px 12px;padding:10px 14px;border-radius:6px;border:1px solid var(--teal);background:var(--teal-dim);font-size:11px;display:none}
+#prox-janela strong{color:var(--teal);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;display:block;margin-bottom:2px}
+
+/* RODÍZIO */
+#rodizio-bar{display:none;margin:0 12px 12px;padding:10px 14px;border-radius:6px;border:1px solid var(--purple);background:var(--purple-dim);font-size:11px;line-height:1.5}
+#rodizio-bar strong{color:var(--purple);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;display:block;margin-bottom:2px}
+
+/* BOTÕES NAV */
+#btns{margin:0 12px 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn-nav{display:flex;align-items:center;justify-content:center;gap:7px;padding:13px;border-radius:8px;font-family:'DM Mono',monospace;font-size:12px;font-weight:500;cursor:pointer;border:none;text-decoration:none;transition:opacity .15s,transform .1s}
+.btn-nav:hover{opacity:.85;transform:scale(.98)}
+.btn-gmaps{background:#1a73e8;color:#fff}
+.btn-waze{background:#33ccff;color:#0d0f0e}
+.btn-nav.off{opacity:.3;pointer-events:none}
+
+/* ALERT */
+#alert-bar{display:none;margin:0 12px 12px;padding:11px 14px;border-radius:6px;border:1px solid var(--warn);background:var(--warn-dim);font-size:11px;line-height:1.6;animation:pulse 2s ease-in-out infinite}
+#alert-bar.crit{border-color:var(--danger);background:var(--danger-dim)}
+#alert-bar strong{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;display:block;margin-bottom:3px;color:var(--warn)}
+#alert-bar.crit strong{color:var(--danger)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+
+/* SEÇÃO */
+.sec{margin:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.sec-hd{padding:10px 14px;border-bottom:1px solid var(--border);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+.sec-hd .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;box-shadow:0 0 6px var(--accent)}
+
+/* PLACAR SEMANA */
+.semana{padding:12px;display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.dia{padding:8px 3px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);text-align:center}
+.dia.hoje{border-color:var(--accent);background:rgba(77,255,145,0.07)}
+.dia-n{font-size:8px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}
+.dia-e{font-size:15px;line-height:1;margin-bottom:2px}
+.dia-l{font-size:7px;letter-spacing:.5px;text-transform:uppercase}
+.cv{color:var(--accent)}.ca{color:var(--warn)}.cr{color:var(--danger)}.cp{color:var(--purple)}
+
+/* CLIMA */
+#clima{margin:12px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;gap:12px}
+.wx-icon{font-size:22px}
+.wx-body{flex:1}
+.wx-main{font-size:12px;color:var(--text)}
+.wx-note{font-size:10px;color:var(--muted);margin-top:2px}
+.wx-warn{color:var(--warn)}
+
+/* LINHA DO TEMPO */
+.tl-wrap{padding:12px}
+.tl-item{display:flex;align-items:flex-start;padding:6px 0 6px 18px;position:relative}
+.tl-item::before{content:'';position:absolute;left:5px;top:18px;width:2px;height:100%;background:var(--border)}
+.tl-item:last-child::before{display:none}
+.tl-dot{position:absolute;left:0;top:8px;width:12px;height:12px;border-radius:50%;border:2px solid var(--bg)}
+.tl-dot.verde{background:var(--accent);box-shadow:0 0 6px var(--accent)}
+.tl-dot.amarelo{background:var(--warn)}
+.tl-dot.vermelho{background:var(--danger)}
+.tl-dot.purple{background:var(--purple)}
+.tl-dot.now{background:var(--blue);box-shadow:0 0 8px var(--blue);animation:blink 1.2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.tl-body{flex:1}
+.tl-hora{font-size:12px;font-weight:500}
+.tl-desc{font-size:10px;color:var(--muted);margin-top:2px;line-height:1.4}
+.badge{display:inline-block;font-size:8px;letter-spacing:1px;text-transform:uppercase;padding:2px 6px;border-radius:3px;margin-top:3px}
+.bv{background:var(--accent-dim);color:var(--accent)}
+.ba{background:var(--warn-dim);color:var(--warn)}
+.br{background:var(--danger-dim);color:var(--danger)}
+.bp{background:var(--purple-dim);color:var(--purple)}
+.bb{background:var(--blue-dim);color:var(--blue)}
+
+/* DICAS */
+.dicas{padding:12px;display:grid;gap:8px}
+.dica{padding:10px 12px;background:var(--surface2);border-left:3px solid var(--border);border-radius:0 5px 5px 0;font-size:10px;line-height:1.6;color:var(--muted)}
+.dica.dv{border-color:var(--accent)}.dica.da{border-color:var(--warn)}.dica.dr{border-color:var(--danger)}.dica.dp{border-color:var(--purple)}
+.dica strong{color:var(--text);display:block;margin-bottom:2px;font-size:11px}
+
+/* ROTAS */
+.rotas{padding:12px;display:grid;gap:10px}
+.rota{padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px}
+.rota.principal{border-color:var(--accent)}
+.rota-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
+.rota-nome{font-size:12px;font-weight:500}
+.rota-tag{font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);background:var(--accent-dim);padding:2px 6px;border-radius:3px}
+.rota-via{font-size:10px;color:var(--muted);margin-bottom:8px}
+.rota-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px}
+.rota-stat{text-align:center}
+.rs-v{font-size:13px;font-weight:500}
+.rs-l{font-size:8px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:1px}
+.rota-note{font-size:10px;color:var(--muted);margin-bottom:10px;line-height:1.5}
+.rota-btns{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.btn{display:flex;align-items:center;justify-content:center;gap:5px;padding:8px;border-radius:5px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;border:none;text-decoration:none;transition:opacity .15s}
+.btn:hover{opacity:.85}
+.btn-gm{background:#1a73e8;color:#fff}
+.btn-wz{background:#33ccff;color:#0d0f0e;font-weight:500}
+
+/* HISTÓRICO */
+.hw{padding:12px}
+.hf{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:8px}
+.hr2{display:grid;grid-template-columns:1fr auto;gap:7px;margin-bottom:12px}
+.hi{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:7px 9px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text);outline:none;width:100%}
+.hi:focus{border-color:var(--accent)}
+.hl{font-size:8px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}
+.ba-add{background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent);border-radius:5px;padding:7px 12px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;white-space:nowrap;align-self:end}
+.ba-add:hover{background:var(--accent);color:var(--bg)}
+.hlist{display:grid;gap:5px;margin-bottom:10px}
+.hrow{display:flex;align-items:center;gap:7px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;font-size:10px}
+.hd{color:var(--muted);min-width:40px}
+.hr{color:var(--text);flex:1}
+.ht{font-weight:500;color:var(--accent);min-width:44px;text-align:right}
+.hdel{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 2px}
+.hdel:hover{color:var(--danger)}
+.hstats{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.hsb{padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:5px;text-align:center}
+.hsv{font-size:17px;font-weight:500;color:var(--accent)}
+.hsl{font-size:8px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+.hemp{font-size:11px;color:var(--muted);padding:4px 0}
+
+/* RODÍZIO TABELA */
+.rtab{padding:12px;display:grid;gap:5px}
+.rrow{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;font-size:11px}
+.rrow.at{border-color:var(--purple);background:var(--purple-dim)}
+.rdia{min-width:70px;color:var(--muted)}
+.rrow.at .rdia{color:var(--purple);font-weight:500}
+.rpl{flex:1;color:var(--text)}
+.rbadge{font-size:8px;letter-spacing:1px;text-transform:uppercase;padding:2px 6px;border-radius:3px;background:var(--purple-dim);color:var(--purple)}
+
+/* FERIADOS */
+.ferias{padding:12px;display:grid;gap:6px}
+.fr{display:flex;align-items:center;gap:10px;font-size:11px}
+.fdt{min-width:40px;color:var(--accent);font-weight:500}
+.fnm{color:var(--text);flex:1}
+.ftag{font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--warn);background:var(--warn-dim);padding:2px 5px;border-radius:3px}
+
+footer{margin:20px 12px 0;font-size:8px;color:var(--muted);text-align:center;opacity:.4;line-height:1.6}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.sec,#semaforo,#btns,#alert-bar,#clima,#rodizio-bar,#prox-janela,#rota-info,.modo-toggle{animation:fadeUp .3s ease forwards}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <h1>Volta pra <em>Casa</em></h1>
+    <p id="header-sub">Liberdade → Atibaia · BOZ4A56</p>
+  </div>
+  <div class="clock">
+    <div id="clock">--:--</div>
+    <div id="date-label">...</div>
+  </div>
+</header>
+
+<!-- TOGGLE MODO -->
+<div class="modo-toggle">
+  <button class="modo-btn ativo casa" id="btn-modo-casa" onclick="setModo('casa')">🏠 Volta pra Casa</button>
+  <button class="modo-btn trabalho" id="btn-modo-trab" onclick="setModo('trabalho')">💼 Ida ao Trabalho</button>
+</div>
+
+<!-- SEMÁFORO -->
+<div id="semaforo" class="verde">
+  <div class="sema-icon">🟢</div>
+  <div class="sema-body">
+    <div class="sema-status" id="sema-status">Carregando...</div>
+    <div class="sema-detail" id="sema-detail">Analisando condições</div>
+  </div>
+  <div class="sema-eta">
+    <div class="sema-eta-val" id="sema-eta">--</div>
+    <div class="sema-eta-label">Est. viagem</div>
+  </div>
+</div>
+
+<!-- ROTA INFO -->
+<div id="rota-info">
+  <strong id="rota-info-title">🏠 Casa → Trabalho</strong>
+  <span id="rota-info-body">R. Alvorada 171, Atibaia → R. Prof. Antônio Prudente 194, Liberdade, SP</span>
+</div>
+
+<div id="prox-janela">
+  <strong>⏱ Próxima janela boa</strong>
+  <span id="prox-msg"></span>
+</div>
+
+<div id="rodizio-bar">
+  <strong>🚗 Rodízio ativo — placa final 6 (quarta-feira)</strong>
+  <span id="rod-msg"></span>
+</div>
+
+<div id="btns">
+  <a class="btn-nav btn-gmaps" id="btn-gm" href="#" target="_blank">📍 Google Maps</a>
+  <a class="btn-nav btn-waze" id="btn-wz" href="#" target="_blank">🚗 Waze</a>
+</div>
+
+<div id="alert-bar">
+  <strong id="alert-title"></strong>
+  <span id="alert-msg"></span>
+</div>
+
+<div class="sec">
+  <div class="sec-hd"><span class="dot"></span>Semana atual</div>
+  <div class="semana" id="semana"></div>
+</div>
+
+<div id="clima">
+  <div class="wx-icon" id="wx-icon">🌤</div>
+  <div class="wx-body">
+    <div class="wx-main" id="wx-main">Verificando clima...</div>
+    <div class="wx-note" id="wx-note">Aguarde</div>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec-hd"><span class="dot"></span>Linha do tempo — hoje</div>
+  <div class="tl-wrap"><div id="timeline"></div></div>
+</div>
+
+<div class="sec">
+  <div class="sec-hd"><span class="dot"></span>Dicas para hoje</div>
+  <div class="dicas" id="dicas"></div>
+</div>
+
+<div class="sec">
+  <div class="sec-hd"><span class="dot"></span>Rotas</div>
+  <div class="rotas" id="rotas"></div>
+</div>
+
+<div class="sec">
+  <div class="sec-hd"><span class="dot"></span>Minhas viagens</div>
+  <div class="hw">
+    <div class="hf">
+      <div><div class="hl">Horário de saída</div><input class="hi" id="h-hora" type="time" value="18:00"></div>
+      <div><div class="hl">Rota</div>
+        <select class="hi" id="h-rota"><option value="Fernão Dias">Fernão Dias</option><option value="Bandeirantes">Bandeirantes</option></select>
+      </div>
+    </div>
+    <div class="hr2">
+      <div><div class="hl">Tempo total (minutos)</div><input class="hi" id="h-tempo" type="number" min="20" max="360" placeholder="ex: 75"></div>
+      <button class="ba-add" onclick="addViagem()">+ Registrar</button>
+    </div>
+    <div class="hlist" id="hist-list"></div>
+    <div class="hstats" id="hist-stats" style="display:none"></div>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec-hd"><span class="dot"></span>Rodízio SP — tabela completa</div>
+  <div class="rtab" id="rod-table"></div>
+</div>
+
+<div class="sec">
+  <div class="sec-hd"><span class="dot"></span>Feriados — próximos 60 dias</div>
+  <div class="ferias" id="ferias"></div>
+</div>
+
+<footer>
+  Atualiza a cada minuto · Clima a cada 15min · Histórico salvo no dispositivo<br>
+  BOZ4A56 · Placa final 6 · Rodízio quartas · 7h–10h e 17h–20h
+</footer>
+
+<script>
+// ══════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════
+const MO=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const DN=['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+const DS=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>d.toISOString().slice(0,10);
+const fmt=t=>`${pad(Math.floor(t/60))}h${t%60>0?pad(t%60):''}`;
+
+// Endereços
+const ADDR = {
+  casa:     { nome:'Casa (Atibaia)',     end:'Rua Alvorada, 171, Jardim Imperial, Atibaia, SP', enc:'Rua+Alvorada+171+Jardim+Imperial+Atibaia+SP' },
+  trabalho: { nome:'Trabalho (Liberdade)', end:'R. Prof. Antônio Prudente, 194, Liberdade, SP', enc:'Rua+Professor+Antonio+Prudente+194+Liberdade+Sao+Paulo+SP' },
+};
+
+// Rotas por modo
+const ROTAS_CONFIG = {
+  casa: [
+    { nome:'Fernão Dias', via:'Liberdade → Marginal Tietê → BR-381 → Atibaia', km:'72km', ped:'Sem pedágio', normal:'~1h00', principal:true, note:'Rota mais direta, sem pedágio. Em sextas/vésperas: saia antes das 14h30 ou depois das 21h.' },
+    { nome:'Bandeirantes + SP-083', via:'Liberdade → Pinheiros → Bandeirantes → SP-083 → Atibaia', km:'95km', ped:'~R$ 9,00', normal:'~1h20', principal:false, note:'Use quando a Fernão Dias tiver acidente ou estiver completamente parada.' },
+  ],
+  trabalho: [
+    { nome:'Fernão Dias', via:'Atibaia → BR-381 → Marginal Tietê → Liberdade', km:'72km', ped:'Sem pedágio', normal:'~1h05', principal:true, note:'Rota principal. Pico de manhã (7h–9h30) é pesado. Saia antes das 6h30 ou depois das 9h30.' },
+    { nome:'Bandeirantes + SP-083', via:'Atibaia → SP-083 → Bandeirantes → Liberdade', km:'95km', ped:'~R$ 9,00', normal:'~1h25', principal:false, note:'Alternativa quando a Fernão Dias estiver com acidente.' },
+  ],
+};
+
+// Placa: BOZ4A56 → final 6 → quarta (dow=3)
+const PLACA = { final:6, dia:3 };
+const ROD_PER = [[7*60,10*60],[17*60,20*60]];
+const ROD_TAB = [
+  {dow:1,dia:'Segunda',pl:'Final 1 e 2'},
+  {dow:2,dia:'Terça',  pl:'Final 3 e 4'},
+  {dow:3,dia:'Quarta', pl:'Final 5 e 6'},
+  {dow:4,dia:'Quinta', pl:'Final 7 e 8'},
+  {dow:5,dia:'Sexta',  pl:'Final 9 e 0'},
+];
+
+const FERIADOS=[
+  {d:'2025-06-19',n:'Corpus Christi'},
+  {d:'2025-07-09',n:'Revolução Constitucionalista'},
+  {d:'2025-09-07',n:'Independência do Brasil'},
+  {d:'2025-10-12',n:'Nossa Sra. Aparecida'},
+  {d:'2025-11-02',n:'Finados'},
+  {d:'2025-11-15',n:'Proclamação da República'},
+  {d:'2025-11-20',n:'Consciência Negra'},
+  {d:'2025-12-24',n:'Véspera de Natal'},
+  {d:'2025-12-25',n:'Natal'},
+  {d:'2025-12-31',n:'Réveillon'},
+  {d:'2026-01-01',n:'Ano Novo'},
+  {d:'2026-01-25',n:'Aniversário de SP'},
+  {d:'2026-02-16',n:'Carnaval (segunda)'},
+  {d:'2026-02-17',n:'Carnaval (terça)'},
+  {d:'2026-04-03',n:'Sexta-Feira Santa'},
+  {d:'2026-04-21',n:'Tiradentes'},
+  {d:'2026-05-01',n:'Dia do Trabalho'},
+  {d:'2026-06-04',n:'Corpus Christi'},
+  {d:'2026-07-09',n:'Revolução Constitucionalista'},
+  {d:'2026-09-07',n:'Independência do Brasil'},
+];
+
+// ══════════════════════════════════════════
+// ESTADO
+// ══════════════════════════════════════════
+let MODO = 'casa'; // 'casa' ou 'trabalho'
+
+function setModo(m) {
+  MODO = m;
+  document.getElementById('btn-modo-casa').className = 'modo-btn'+(m==='casa'?' ativo casa':'');
+  document.getElementById('btn-modo-trab').className = 'modo-btn'+(m==='trabalho'?' ativo trabalho':'');
+  updateAll();
+}
+
+// ══════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════
+const isFer=s=>FERIADOS.some(f=>f.d===s);
+const getFer=s=>{const f=FERIADOS.find(f=>f.d===s);return f?f.n:null;};
+const isVesp=s=>{const d=new Date(s+'T12:00:00'),n=new Date(d);n.setDate(d.getDate()+1);return isFer(iso(n));};
+const isRod=now=>now.getDay()===PLACA.dia&&!isFer(iso(now))&&ROD_PER.some(([s,e])=>{const t=now.getHours()*60+now.getMinutes();return t>=s&&t<e;});
+const fimRod=now=>{const t=now.getHours()*60+now.getMinutes();for(const[s,e]of ROD_PER){if(t>=s&&t<e)return fmt(e);}return '20h';};
+
+function getMapsURL(origem, destino) {
+  return `https://www.google.com/maps/dir/${origem}/${destino}/am=t/`;
+}
+function getWazeURL(destino_ll, destino_q) {
+  return `https://waze.com/ul?ll=${destino_ll}&navigate=yes&q=${destino_q}`;
+}
+
+// ══════════════════════════════════════════
+// AVALIAÇÃO TRÂNSITO
+// ══════════════════════════════════════════
+function avaliar(now, modo) {
+  const t=now.getHours()*60+now.getMinutes();
+  const s=iso(now), dow=now.getDay();
+  const sexta=dow===5, ferH=isFer(s), vesH=isVesp(s), pesado=sexta||vesH;
+  const rod=isRod(now);
+
+  if (rod) return {cor:'bloqueado',icon:'🚫',status:'Rodízio ativo',detail:`Placa 6 restrita até ${fimRod(now)}.`,eta:'--',nivel:4,rod};
+
+  let nivel,eta;
+
+  if (modo==='trabalho') {
+    // Ida ao trabalho: pico crítico é manhã
+    if (ferH) {
+      if(t<8*60)         {nivel=0;eta='~1h05';}
+      else if(t<10*60)   {nivel=1;eta='~1h20';}
+      else if(t<16*60)   {nivel=0;eta='~1h05';}
+      else               {nivel=2;eta='~1h45';}
+    } else if (pesado) {
+      // Véspera/sexta não afeta tanto a ida
+      if(t<6*60+30)      {nivel=0;eta='~1h00';}
+      else if(t<9*60+30) {nivel=2;eta='~1h50';}
+      else if(t<11*60)   {nivel=1;eta='~1h25';}
+      else               {nivel=0;eta='~1h05';}
+    } else {
+      if(t<6*60+30)      {nivel=0;eta='~1h00';}
+      else if(t<9*60+30) {nivel=2;eta='~1h45';}
+      else if(t<11*60)   {nivel=1;eta='~1h20';}
+      else if(t<15*60)   {nivel=0;eta='~1h05';}
+      else if(t<20*60)   {nivel=1;eta='~1h30';}
+      else               {nivel=0;eta='~1h05';}
+    }
+  } else {
+    // Volta pra casa: pico crítico é tarde
+    if (ferH) {
+      if(t<600)          {nivel=0;eta='~1h00';}
+      else if(t<840)     {nivel=1;eta='~1h15';}
+      else if(t<1200)    {nivel=3;eta='2h30+';}
+      else               {nivel=0;eta='~55min';}
+    } else if (pesado) {
+      if(t<870)          {nivel=0;eta='~1h05';}
+      else if(t<930)     {nivel=1;eta='~1h30';}
+      else if(t<1080)    {nivel=3;eta='2h30+';}
+      else if(t<1200)    {nivel=2;eta='~1h45';}
+      else if(t<1290)    {nivel=1;eta='~1h20';}
+      else               {nivel=0;eta='~1h00';}
+    } else {
+      if(t<420)          {nivel=0;eta='~55min';}
+      else if(t<570)     {nivel=1;eta='~1h20';}
+      else if(t<930)     {nivel=0;eta='~1h00';}
+      else if(t<1020)    {nivel=1;eta='~1h30';}
+      else if(t<1170)    {nivel=2;eta='~1h50';}
+      else if(t<1260)    {nivel=1;eta='~1h20';}
+      else               {nivel=0;eta='~1h00';}
+    }
+  }
+
+  const m=[
+    {cor:'verde',  icon:'🟢',status:'Boa hora pra sair!',  detail:'Trânsito fluindo bem agora.'},
+    {cor:'amarelo',icon:'🟡',status:'Trânsito moderado',   detail:'Dá pra ir, mas terá lentidão.'},
+    {cor:'vermelho',icon:'🔴',status:'Trânsito pesado',    detail:'Melhor esperar. Veja a linha do tempo.'},
+    {cor:'vermelho',icon:'🚨',status:'Trânsito crítico!',  detail:'Evite sair agora.'},
+  ];
+  return {...m[nivel],eta,nivel,rod,ferH,vesH,sexta,pesado};
+}
+
+function proximaJanela(now, modo) {
+  const s=iso(now), dow=now.getDay();
+  const pesado=dow===5||isVesp(s), ferH=isFer(s);
+  const cur=now.getHours()*60+now.getMinutes();
+  let slots;
+
+  if (modo==='trabalho') {
+    slots=[{t:0,l:'antes das 6h30'},{t:9*60+30,l:'9h30'},{t:11*60,l:'11h'}];
+  } else {
+    if(ferH)       slots=[{t:21*60,l:'21h'}];
+    else if(pesado) slots=[{t:870,l:'14h30'},{t:1290,l:'21h30'}];
+    else            slots=[{t:930,l:'9h30'},{t:1260,l:'21h'}];
+  }
+
+  if(isRod(now)){
+    const t=now.getHours()*60+now.getMinutes();
+    for(const[,e]of ROD_PER){if(t<e){slots.unshift({t:e,l:fmt(e)});break;}}
+  }
+  const prox=slots.find(x=>x.t>cur);
+  return prox?prox.l:null;
+}
+
+// ══════════════════════════════════════════
+// SEMÁFORO + BOTÕES
+// ══════════════════════════════════════════
+function updateSemaforo() {
+  const now=new Date();
+  const av=avaliar(now, MODO);
+  const el=document.getElementById('semaforo');
+  el.className=av.cor;
+  el.querySelector('.sema-icon').textContent=av.icon;
+  document.getElementById('sema-status').textContent=av.status;
+  document.getElementById('sema-detail').textContent=av.detail;
+  document.getElementById('sema-eta').textContent=av.eta;
+
+  // URLs dos botões
+  const orig = MODO==='casa' ? ADDR.trabalho.enc : ADDR.casa.enc;
+  const dest = MODO==='casa' ? ADDR.casa.enc     : ADDR.trabalho.enc;
+  const destLL = MODO==='casa' ? '-23.1168,-46.5506' : '-23.5563,-46.6360';
+  const destQ  = MODO==='casa' ? 'Atibaia+SP' : 'Liberdade+Sao+Paulo+SP';
+
+  document.getElementById('btn-gm').href = getMapsURL(orig, dest);
+  document.getElementById('btn-wz').href = getWazeURL(destLL, destQ);
+
+  // Info rota
+  const isC = MODO==='casa';
+  document.getElementById('rota-info-title').textContent = isC ? '🏠 Voltando pra casa' : '💼 Indo ao trabalho';
+  document.getElementById('rota-info-body').textContent = isC
+    ? 'R. Prof. Antônio Prudente 194, Liberdade → Rua Alvorada 171, Atibaia'
+    : 'Rua Alvorada 171, Atibaia → R. Prof. Antônio Prudente 194, Liberdade';
+
+  // Rodízio
+  const rbar=document.getElementById('rodizio-bar');
+  if(av.rod){
+    rbar.style.display='block';
+    document.getElementById('rod-msg').textContent=`Placa 6 não circula agora. Liberado após ${fimRod(now)}.`;
+    document.getElementById('btn-gm').classList.add('off');
+    document.getElementById('btn-wz').classList.add('off');
+  } else {
+    rbar.style.display='none';
+    document.getElementById('btn-gm').classList.remove('off');
+    document.getElementById('btn-wz').classList.remove('off');
+  }
+
+  // Próxima janela
+  const pj=document.getElementById('prox-janela');
+  if(av.nivel>=2){
+    const prox=proximaJanela(now,MODO);
+    if(prox){pj.style.display='block';document.getElementById('prox-msg').textContent=`Próxima saída boa estimada a partir das ${prox}.`;}
+  } else { pj.style.display='none'; }
+}
+
+// ══════════════════════════════════════════
+// ALERTA
+// ══════════════════════════════════════════
+function setupAlert() {
+  const now=new Date(), s=iso(now), dow=now.getDay();
+  const bar=document.getElementById('alert-bar');
+  bar.style.display='none'; bar.className='';
+  if(isFer(s)){
+    bar.style.display='block';bar.classList.add('crit');
+    document.getElementById('alert-title').textContent=`Hoje: ${getFer(s)}`;
+    document.getElementById('alert-msg').textContent='Trânsito imprevisível. Saia antes das 10h ou depois das 21h.';
+  } else if(isVesp(s)){
+    bar.style.display='block';
+    document.getElementById('alert-title').textContent='⚠ Véspera de feriado';
+    document.getElementById('alert-msg').textContent='Pico pesado a partir das 14h30. Janela boa: antes das 14h ou depois das 21h30.';
+  } else if(dow===5){
+    bar.style.display='block';
+    document.getElementById('alert-title').textContent='⚠ Sexta-feira';
+    document.getElementById('alert-msg').textContent='Pico começa às 14h30. Ideal sair antes das 14h ou depois das 20h30.';
+  } else if(dow===3){
+    bar.style.display='block';
+    document.getElementById('alert-title').textContent='🚗 Quarta-feira — rodízio placa 6';
+    document.getElementById('alert-msg').textContent='Restrição 7h–10h e 17h–20h. Planeje sua saída fora desses horários.';
+  }
+}
+
+// ══════════════════════════════════════════
+// PLACAR SEMANA
+// ══════════════════════════════════════════
+function buildSemana(){
+  const now=new Date(),dow=now.getDay(),cont=document.getElementById('semana');
+  cont.innerHTML='';
+  for(let i=1;i<=5;i++){
+    const d=new Date(now);d.setDate(now.getDate()-(dow-i));
+    const ds=iso(d),dw=d.getDay(),hj=ds===iso(now);
+    const fer=isFer(ds),ves=isVesp(ds),sex=dw===5,rod=dw===PLACA.dia&&!fer;
+    let e,l,c;
+    if(fer)      {e='🎉';l='Feriado'; c='cp';}
+    else if(ves) {e='⚠️';l='Véspera'; c='ca';}
+    else if(sex) {e='😬';l='Sexta';   c='ca';}
+    else if(rod) {e='🚗';l='Rodízio'; c='cp';}
+    else         {e='✅';l='Normal';  c='cv';}
+    cont.innerHTML+=`<div class="dia${hj?' hoje':''}"><div class="dia-n">${DS[dw]}</div><div class="dia-e">${e}</div><div class="dia-l ${c}">${l}</div></div>`;
+  }
+}
+
+// ══════════════════════════════════════════
+// LINHA DO TEMPO
+// ══════════════════════════════════════════
+function buildTimeline(){
+  const now=new Date(),ds=iso(now),dow=now.getDay();
+  const sexta=dow===5,ferH=isFer(ds),vesH=isVesp(ds),pesado=sexta||vesH;
+  const temRod=dow===PLACA.dia&&!ferH;
+  const hAtual=`${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  let slots=[];
+
+  if(MODO==='trabalho'){
+    if(ferH){
+      slots=[
+        {h:'Antes das 8h',   cor:'verde',  b:'bv',bt:'Ótimo',   desc:'Estrada livre. ~1h05.'},
+        {h:'8h – 10h',       cor:'amarelo',b:'ba',bt:'Moderado', desc:'Movimento crescente.'},
+        {h:'10h – 16h',      cor:'verde',  b:'bv',bt:'Tranquilo',desc:'Feriado, menos gente na estrada.'},
+        {h:'Depois das 16h', cor:'amarelo',b:'ba',bt:'Atenção',  desc:'Movimento de retorno do feriado.'},
+      ];
+    } else {
+      slots=[
+        {h:'Antes das 6h30', cor:'verde',  b:'bv',bt:'Ótimo',     desc:'Estrada livre. ~1h00.'},
+        {h:'6h30 – 9h30',    cor:'vermelho',b:'br',bt:'Pico manhã',desc:'Rush de entrada em SP. ~1h45.'},
+        {h:'9h30 – 11h',     cor:'amarelo',b:'ba',bt:'Melhorando', desc:'Desafogando. ~1h20.'},
+        {h:'11h – 15h',      cor:'verde',  b:'bv',bt:'Ótimo',      desc:'Horário tranquilo. ~1h05.'},
+        {h:'15h – 20h',      cor:'amarelo',b:'ba',bt:'Moderado',   desc:'Rush da tarde, impacta menos a ida.'},
+        {h:'Depois das 20h', cor:'verde',  b:'bv',bt:'Livre',      desc:'Estrada tranquila. ~1h05.'},
+      ];
+    }
+  } else {
+    if(ferH){
+      slots=[
+        {h:'Antes das 10h',  cor:'verde',  b:'bv',bt:'Ótimo',  desc:'Janela livre antes do caos.'},
+        {h:'10h – 14h',      cor:'amarelo',b:'ba',bt:'Moderado',desc:'Movimento crescente.'},
+        {h:'14h – 21h',      cor:'vermelho',b:'br',bt:'Crítico',desc:'Feriado + pico = caos. Evite.'},
+        {h:'Depois das 21h', cor:'verde',  b:'bv',bt:'Ótimo',  desc:'Cidade esvazia. ~55min.'},
+      ];
+    } else if(pesado){
+      slots=[
+        {h:'Até 14h30',       cor:'verde',  b:'bv',bt:'Boa janela',desc:`Antes do pico ${sexta?'de sexta':'da véspera'}. ~1h05.`},
+        {h:'14h30 – 15h30',   cor:'amarelo',b:'ba',bt:'Moderado',  desc:'Pico começando.'},
+        {h:'15h30 – 20h',     cor:'vermelho',b:'br',bt:'Pesado',   desc:'Pico máximo. 2h+ na estrada.'},
+        {h:'20h – 21h30',     cor:'amarelo',b:'ba',bt:'Melhorando',desc:'~1h20.'},
+        {h:'Depois das 21h30',cor:'verde',  b:'bv',bt:'Ótimo',     desc:'~1h00.'},
+      ];
+    } else {
+      slots=[
+        {h:'Antes das 7h',    cor:'verde',  b:'bv',bt:'Livre',    desc:'~55min.'},
+        {h:'7h – 9h30',       cor:'amarelo',b:'ba',bt:'Pico manhã',desc:'Rush de entrada na cidade.'},
+        {h:'9h30 – 15h30',    cor:'verde',  b:'bv',bt:'Ótimo',    desc:'Período mais tranquilo. ~1h00.'},
+        {h:'15h30 – 19h30',   cor:'vermelho',b:'br',bt:'Pico tarde',desc:'Rush diário. ~1h45 a 2h.'},
+        {h:'19h30 – 21h',     cor:'amarelo',b:'ba',bt:'Desafoga', desc:'~1h20.'},
+        {h:'Depois das 21h',  cor:'verde',  b:'bv',bt:'Ótimo',    desc:'~1h00.'},
+      ];
+    }
+  }
+
+  if(temRod){
+    slots.unshift({h:'7h – 10h', cor:'purple',b:'bp',bt:'Rodízio',desc:'Placa 6 restrita na área central.'});
+    slots.push(   {h:'17h – 20h',cor:'purple',b:'bp',bt:'Rodízio',desc:'Placa 6 restrita. Saída após 20h.'});
+  }
+
+  document.getElementById('timeline').innerHTML=
+    `<div class="tl-item"><div class="tl-dot now"></div><div class="tl-body"><div class="tl-hora" style="color:var(--blue)">▶ Agora — ${hAtual}</div><div class="tl-desc" style="color:var(--blue);opacity:.7">Você está aqui</div></div></div>`
+    +slots.map(s=>`<div class="tl-item"><div class="tl-dot ${s.cor}"></div><div class="tl-body"><div class="tl-hora">${s.h}</div><div class="tl-desc">${s.desc}</div><span class="badge ${s.b}">${s.bt}</span></div></div>`).join('');
+}
+
+// ══════════════════════════════════════════
+// DICAS
+// ══════════════════════════════════════════
+function buildDicas(){
+  const now=new Date(),ds=iso(now),dow=now.getDay(),t=now.getHours()*60+now.getMinutes();
+  const ferH=isFer(ds),vesH=isVesp(ds),sexta=dow===5,temRod=dow===PLACA.dia&&!ferH;
+  const dicas=[];
+
+  if(temRod){
+    if(isRod(now)) dicas.push({c:'dp',ti:'🚗 Rodízio ativo agora',tx:'Placa 6 restrita. Aguarde o fim do período antes de sair.'});
+    else if(t<17*60) dicas.push({c:'dp',ti:'⚠ Rodízio mais tarde (17h–20h)',tx:'Planeje sair antes das 17h ou depois das 20h.'});
+    else dicas.push({c:'dv',ti:'✅ Rodízio encerrado',tx:'Pode circular normalmente agora.'});
+  }
+
+  if(ferH) dicas.push({c:'dr',ti:`🎉 Feriado — ${getFer(ds)}`,tx:'Trânsito imprevisível. Evite 14h–21h. Use o Waze para rotas alternativas em tempo real.'});
+  else if(vesH) dicas.push({c:'da',ti:'⚠ Véspera de feriado',tx:'Pico antecipado a partir das 14h30. Priorize sair antes das 14h.'});
+  else if(sexta) dicas.push({c:'da',ti:'⚠ Sexta-feira',tx:'Pico às 14h30. Se não puder sair antes das 14h, espere até depois das 20h30.'});
+
+  if(MODO==='trabalho'){
+    if(t>=5*60&&t<6*60+30) dicas.push({c:'dv',ti:'🌅 Janela de ouro',tx:'Sair agora é ideal. Estrada livre, chega em SP antes do pico.'});
+    if(t>=9*60+30&&t<11*60) dicas.push({c:'dv',ti:'✅ Pico passando',tx:'O rush da manhã está diminuindo. Boa hora pra sair agora.'});
+  } else {
+    if(t>=20*60) dicas.push({c:'dv',ti:'🌙 Saída noturna',tx:'Depois das 20h a Fernão Dias costuma fluir bem. Boa hora pra sair.'});
+  }
+
+  if(!dicas.length) dicas.push({c:'dv',ti:'✅ Dia tranquilo',tx:'Sem feriado, rodízio ou sexta hoje. Qualquer horário fora do pico é boa opção.'});
+  document.getElementById('dicas').innerHTML=dicas.map(d=>`<div class="dica ${d.c}"><strong>${d.ti}</strong>${d.tx}</div>`).join('');
+}
+
+// ══════════════════════════════════════════
+// ROTAS
+// ══════════════════════════════════════════
+function buildRotas(){
+  const orig = MODO==='casa' ? ADDR.trabalho.enc : ADDR.casa.enc;
+  const dest = MODO==='casa' ? ADDR.casa.enc     : ADDR.trabalho.enc;
+  const destLL = MODO==='casa' ? '-23.1168,-46.5506' : '-23.5563,-46.6360';
+  const destQ  = MODO==='casa' ? 'Atibaia+SP' : 'Liberdade+Sao+Paulo';
+  const GM=getMapsURL(orig,dest);
+  const WZ=getWazeURL(destLL,destQ);
+
+  document.getElementById('rotas').innerHTML=ROTAS_CONFIG[MODO].map(r=>`
+    <div class="rota${r.principal?' principal':''}">
+      <div class="rota-top"><div class="rota-nome">${r.nome}</div>${r.principal?'<div class="rota-tag">★ Principal</div>':''}</div>
+      <div class="rota-via">${r.via}</div>
+      <div class="rota-stats">
+        <div class="rota-stat"><div class="rs-v">${r.km}</div><div class="rs-l">Distância</div></div>
+        <div class="rota-stat"><div class="rs-v">${r.normal}</div><div class="rs-l">Normal</div></div>
+        <div class="rota-stat"><div class="rs-v">${r.ped}</div><div class="rs-l">Pedágio</div></div>
+      </div>
+      <div class="rota-note">${r.note}</div>
+      <div class="rota-btns"><a class="btn btn-gm" href="${GM}" target="_blank">📍 Google Maps</a><a class="btn btn-wz" href="${WZ}" target="_blank">🚗 Waze</a></div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════
+// HISTÓRICO
+// ══════════════════════════════════════════
+const getH=()=>{try{return JSON.parse(localStorage.getItem('vpc4')||'[]');}catch(e){return[];}};
+const saveH=h=>{try{localStorage.setItem('vpc4',JSON.stringify(h));}catch(e){}};
+
+function addViagem(){
+  const hora=document.getElementById('h-hora').value;
+  const rota=document.getElementById('h-rota').value;
+  const tempo=parseInt(document.getElementById('h-tempo').value);
+  if(!hora||isNaN(tempo)||tempo<20){alert('Preencha horário e tempo (min 20min).');return;}
+  const now=new Date();
+  const h=getH();
+  h.unshift({dt:`${pad(now.getDate())}/${pad(now.getMonth()+1)}`,hora,rota,tempo,modo:MODO});
+  if(h.length>50)h.pop();
+  saveH(h);
+  document.getElementById('h-tempo').value='';
+  renderHistorico();
+}
+function delViagem(i){const h=getH();h.splice(i,1);saveH(h);renderHistorico();}
+function renderHistorico(){
+  const all=getH();
+  const h=all.filter(v=>v.modo===MODO||!v.modo);
+  const list=document.getElementById('hist-list'),stats=document.getElementById('hist-stats');
+  if(!h.length){list.innerHTML='<div class="hemp">Nenhuma viagem registrada ainda.</div>';stats.style.display='none';return;}
+  list.innerHTML=h.slice(0,10).map((v,i)=>`<div class="hrow"><div class="hd">${v.dt}</div><div class="hr">${v.hora} · ${v.rota}</div><div class="ht">${v.tempo}min</div><button class="hdel" onclick="delViagem(${all.indexOf(v)})">×</button></div>`).join('');
+  const avg=Math.round(h.reduce((s,v)=>s+v.tempo,0)/h.length);
+  const pior=h.reduce((a,b)=>a.tempo>b.tempo?a:b);
+  const melhor=h.reduce((a,b)=>a.tempo<b.tempo?a:b);
+  stats.style.display='grid';
+  stats.innerHTML=`
+    <div class="hsb"><div class="hsv">${avg}min</div><div class="hsl">Média</div></div>
+    <div class="hsb"><div class="hsv" style="color:var(--accent)">${melhor.tempo}min</div><div class="hsl">Melhor</div></div>
+    <div class="hsb"><div class="hsv" style="color:var(--danger)">${pior.tempo}min</div><div class="hsl">Pior</div></div>
+    <div class="hsb"><div class="hsv">${h.length}</div><div class="hsl">Viagens</div></div>`;
+}
+
+// ══════════════════════════════════════════
+// RODÍZIO TABELA
+// ══════════════════════════════════════════
+function buildRodTable(){
+  const dow=new Date().getDay();
+  document.getElementById('rod-table').innerHTML=ROD_TAB.map(r=>
+    `<div class="rrow${r.dow===dow?' at':''}"><div class="rdia">${r.dia}</div><div class="rpl">${r.pl}</div>${r.dow===dow?'<span class="rbadge">hoje</span>':''}</div>`
+  ).join('')+`<div style="padding:10px 10px 4px;font-size:9px;color:var(--muted);line-height:1.5">7h–10h e 17h–20h · Área central de SP · Suspenso em feriados</div>`;
+}
+
+// ══════════════════════════════════════════
+// CLIMA
+// ══════════════════════════════════════════
+async function fetchClima(){
+  try{
+    const url='https://api.open-meteo.com/v1/forecast?latitude=-23.1168&longitude=-46.5506&current=temperature_2m,weathercode,precipitation,windspeed_10m&timezone=America%2FSao_Paulo';
+    const r=await fetch(url);const data=await r.json();
+    const{temperature_2m:temp,weathercode:wc,precipitation:prec,windspeed_10m:vento}=data.current;
+    const icons={0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',51:'🌦',53:'🌧',55:'🌧',61:'🌧',63:'🌧',65:'⛈',80:'🌦',81:'🌧',82:'⛈',95:'⛈'};
+    const labs={0:'Céu limpo',1:'Poucas nuvens',2:'Parcialmente nublado',3:'Nublado',45:'Nevoeiro',51:'Garoa leve',53:'Garoa',55:'Garoa forte',61:'Chuva fraca',63:'Chuva moderada',65:'Chuva forte',80:'Pancadas',81:'Pancadas fortes',82:'Tempestade',95:'Tempestade'};
+    document.getElementById('wx-icon').textContent=icons[wc]||'🌡';
+    document.getElementById('wx-main').textContent=`${labs[wc]||'Variável'} · ${Math.round(temp)}°C · Vento ${Math.round(vento)}km/h`;
+    const note=document.getElementById('wx-note');
+    if(prec>0){note.textContent=`⚠ Chuva ${prec}mm em Atibaia — adiciona ~20-30min à viagem`;note.className='wx-note wx-warn';}
+    else{note.textContent='Sem chuva agora · Estrada em boas condições';note.className='wx-note';}
+  }catch(e){document.getElementById('wx-main').textContent='Clima indisponível';}
+}
+
+// ══════════════════════════════════════════
+// FERIADOS
+// ══════════════════════════════════════════
+function buildFerias(){
+  const now=new Date();
+  const prox=FERIADOS.filter(f=>{const d=new Date(f.d+'T12:00:00');const diff=(d-now)/86400000;return diff>=-1&&diff<=60;}).slice(0,8);
+  const el=document.getElementById('ferias');
+  if(!prox.length){el.innerHTML='<div style="padding:8px;font-size:11px;color:var(--muted)">Sem feriados nos próximos 60 dias.</div>';return;}
+  el.innerHTML=prox.map(f=>{
+    const d=new Date(f.d+'T12:00:00');
+    const sx=d.getDay()===5,qu=d.getDay()===4;
+    const tag=sx?'<span class="ftag">+ caos</span>':qu?'<span class="ftag">véspera</span>':'';
+    return `<div class="fr"><div class="fdt">${d.getDate()} ${MO[d.getMonth()]}</div><div class="fnm">${f.n} <span style="color:var(--muted);font-size:9px">(${DN[d.getDay()]})</span></div>${tag}</div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// RELÓGIO
+// ══════════════════════════════════════════
+function updateClock(){
+  const now=new Date();
+  document.getElementById('clock').textContent=`${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  document.getElementById('date-label').textContent=`${DN[now.getDay()]}, ${now.getDate()} de ${MO[now.getMonth()]}`;
+}
+
+// ══════════════════════════════════════════
+// UPDATE ALL
+// ══════════════════════════════════════════
+function updateAll(){
+  updateSemaforo();
+  setupAlert();
+  buildTimeline();
+  buildDicas();
+  buildRotas();
+  renderHistorico();
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+updateClock();
+updateAll();
+buildSemana();
+fetchClima();
+buildRodTable();
+buildFerias();
+
+setInterval(()=>{updateClock();updateAll();buildSemana();},60000);
+setInterval(fetchClima,15*60*1000);
+</script>
+</body>
+</html>
